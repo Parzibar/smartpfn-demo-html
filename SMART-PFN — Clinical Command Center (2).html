@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SMART-PFN — Clinical Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* PANTONE 281C #002C9E · 660C #1766FF · 432C #363627 · 7543C #95ABAB */
+  --bg:#FAFBFB; --panel:#FFFFFF; --ink:#363627; --sub:#656C69; --line:#E7EDEC;
+  --accent:#1766FF; --accentD:#002C9E; --up:#1766FF; --down:#002C9E; --warn:#363627;
+  --sans:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --bg:#14140D; --panel:#1E1E14; --ink:#D4DDDD; --sub:#95ABAB; --line:#3C4444; }
+}
+:root[data-theme="dark"]{ --bg:#14140D; --panel:#1E1E14; --ink:#D4DDDD; --sub:#95ABAB; --line:#3C4444; }
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);}
+.mono{font-family:var(--mono)}
+.up{color:var(--up)} .down{color:var(--down)} .warn{color:var(--warn)} .sub{color:var(--sub)}
+a,button{font-family:inherit}
+button{cursor:pointer}
+.hair{border-bottom:1px solid var(--line)}
+.wrap{max-width:1440px;margin:0 auto;padding:0 28px}
+
+/* ---- login ---- */
+.login{min-height:100vh;display:grid;grid-template-columns:1.2fr 1fr}
+.login-left{background:var(--ink);color:var(--bg);display:flex;flex-direction:column;justify-content:space-between;padding:48px}
+.login-left h1{font-size:15px;letter-spacing:.08em;margin:0 0 4px;font-weight:600}
+.login-left .lede{font-size:30px;line-height:1.25;font-weight:500;max-width:480px;margin-top:auto}
+.login-left .foot{font-size:11px;letter-spacing:.06em;color:#9AA69F;font-family:var(--mono)}
+.login-right{display:flex;align-items:center;justify-content:center;padding:48px}
+.login-form{width:100%;max-width:320px}
+.login-form h2{font-size:12px;letter-spacing:.1em;font-weight:600;color:var(--sub);margin:0 0 28px}
+.field{margin-bottom:18px}
+.field label{display:block;font-size:11px;letter-spacing:.06em;color:var(--sub);margin-bottom:6px}
+.field input{width:100%;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:11px 12px;font-size:14px;font-family:var(--mono);border-radius:2px}
+.field input:focus{outline:2px solid var(--accent);outline-offset:1px}
+.btn{width:100%;background:var(--ink);color:var(--bg);border:none;padding:12px;font-size:13px;font-weight:600;letter-spacing:.03em;border-radius:2px}
+.btn:hover{background:var(--accentD)}
+.err{color:var(--down);font-size:12px;margin-top:10px}
+.hint{margin-top:22px;font-size:11px;color:var(--sub);line-height:1.6}
+
+/* ---- shell ---- */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:baseline;gap:10px}
+.brand b{font-size:15px;letter-spacing:.04em}
+.brand span{font-size:11px;color:var(--sub)}
+.topmeta{display:flex;gap:22px;align-items:center;font-size:11px;color:var(--sub);font-family:var(--mono)}
+.badge{border:1px solid var(--accent);color:var(--accent);padding:2px 7px;letter-spacing:.06em;font-size:10px;border-radius:2px}
+.logout{background:none;border:none;color:var(--sub);font-size:11px;text-decoration:underline}
+
+.lbl{font-size:10px;letter-spacing:.08em;color:var(--sub);font-weight:600}
+.big{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* ---- dashboard ---- */
+.kpis{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;border-bottom:1px solid var(--line)}
+.kpi{padding:22px 28px;border-left:1px solid var(--line)}
+.kpi:first-child{border-left:none}
+.kpi .lbl{margin-bottom:10px}
+.kpi .val{font-size:34px;line-height:1}
+.kpi .val small{font-size:15px;color:var(--sub);margin-left:2px}
+
+.layout{display:grid;grid-template-columns:1fr 320px;gap:0}
+.main{border-right:1px solid var(--line)}
+.section{padding:24px 28px;border-bottom:1px solid var(--line)}
+.section h3{font-size:11px;letter-spacing:.08em;color:var(--sub);font-weight:600;margin:0 0 16px}
+
+.table-scroll{max-height:640px;overflow-y:auto}
+.rail-scroll{max-height:360px;overflow-y:auto}
+table{width:100%;border-collapse:collapse}
+thead th{position:sticky;top:0;background:var(--panel)}
+th{text-align:left;font-size:10px;letter-spacing:.06em;color:var(--sub);font-weight:600;padding:0 10px 10px;border-bottom:1px solid var(--line)}
+td{padding:12px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr.row{cursor:pointer}
+tr.row:hover td{background:rgba(31,111,100,.05)}
+td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+.trend-up{color:var(--up)} .trend-down{color:var(--down)}
+.pid{font-family:var(--mono);font-weight:600}
+.tag-review{color:var(--down);font-size:10px;letter-spacing:.05em;font-weight:600}
+.tag-urgent{color:#fff;background:var(--down);font-size:10px;letter-spacing:.04em;font-weight:600;padding:2px 6px;border-radius:2px}
+
+.dist-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:12px}
+.dist-row .name{width:112px;color:var(--sub);font-size:11px}
+.dist-row .bar{flex:1;height:6px;background:var(--line);position:relative;border-radius:1px}
+.dist-row .bar i{position:absolute;left:0;top:0;bottom:0;background:var(--accent);border-radius:1px}
+.dist-row .n{width:16px;text-align:right;font-family:var(--mono)}
+
+.rail{padding:24px 24px}
+.review-item{padding:12px 0;border-bottom:1px solid var(--line)}
+.review-item:last-child{border-bottom:none}
+.review-item .top{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px}
+.review-item .why{font-size:11px;color:var(--sub)}
+.review-item button{background:none;border:1px solid var(--line);padding:5px 9px;font-size:10px;margin-top:8px;border-radius:2px;color:var(--ink)}
+.review-item button:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ---- patient detail ---- */
+.back{background:none;border:none;color:var(--sub);font-size:12px;padding:16px 28px 0;text-align:left}
+.pheader{display:grid;grid-template-columns:auto 1fr auto;gap:32px;align-items:end;padding:14px 28px 24px;border-bottom:1px solid var(--line)}
+.pheader .who .pid{font-size:22px}
+.pheader .who .name{color:var(--sub);font-size:14px;margin-left:8px}
+.metabar{display:flex;gap:26px}
+.metabar div .lbl{margin-bottom:4px}
+.metabar div .v{font-size:13px}
+.drawerbtn{border:1px solid var(--ink);background:none;padding:9px 14px;font-size:12px;border-radius:2px}
+.drawerbtn:hover{background:var(--ink);color:var(--bg)}
+
+.scoreband{display:grid;grid-template-columns:280px 1fr;border-bottom:1px solid var(--line)}
+.scorebox{padding:26px 28px;border-right:1px solid var(--line)}
+.scorebox .lbl{margin-bottom:8px}
+.scorebox .score{font-size:56px;line-height:1}
+.scorebox .score small{font-size:20px;color:var(--sub)}
+.scorebox .traj{margin-top:14px;font-size:13px;font-weight:600}
+.scorebox .metrics{margin-top:18px;display:flex;flex-direction:column;gap:8px}
+.scorebox .metrics div{display:flex;justify-content:space-between;font-size:12px}
+.scorebox .metrics span.v{font-family:var(--mono)}
+.chartbox{padding:26px 28px}
+.chartbox .chartmeta{display:flex;justify-content:space-between;margin-bottom:10px}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr}
+.factor{margin-bottom:14px}
+.factor .fh{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px}
+.factor .fmod{color:var(--sub);font-size:10px;letter-spacing:.04em;margin-left:6px}
+.factor .track{height:5px;background:var(--line);border-radius:1px}
+.factor .fill{height:5px;border-radius:1px}
+
+.modrow{display:grid;grid-template-columns:1fr 90px 60px 90px;padding:10px 0;border-bottom:1px solid var(--line);font-size:12px;align-items:center}
+.modrow:last-child{border-bottom:none}
+.modrow .name{font-weight:600}
+
+.qrow{display:flex;align-items:center;gap:12px;margin-bottom:9px;font-size:12px}
+.qrow .name{width:100px;color:var(--sub)}
+.qrow .track{flex:1;height:5px;background:var(--line);border-radius:1px}
+.qrow .fill{height:5px;background:var(--accent);border-radius:1px}
+.qrow .v{width:36px;text-align:right;font-family:var(--mono)}
+
+.tl{position:relative;padding-left:20px}
+.tl .ev{position:relative;padding-bottom:18px;border-left:1px solid var(--line);padding-left:18px;margin-left:2px}
+.tl .ev:last-child{border-left:none}
+.tl .ev::before{content:'';position:absolute;left:-4px;top:2px;width:7px;height:7px;background:var(--accent);border-radius:50%}
+.tl .ev .d{font-family:var(--mono);font-size:10px;color:var(--sub)}
+.tl .ev .l{font-size:12px;margin-top:2px}
+
+/* ---- drawer ---- */
+.overlay{position:fixed;inset:0;background:rgba(10,12,11,.4);display:flex;justify-content:flex-end;z-index:50}
+.drawer{width:min(560px,92vw);background:var(--panel);height:100%;overflow-y:auto;padding:24px 0}
+.drawer .dh{display:flex;justify-content:space-between;align-items:center;padding:0 24px 16px;border-bottom:1px solid var(--line)}
+.drawer .dh h3{margin:0;font-size:14px}
+.drawer .dh button{background:none;border:none;font-size:20px;color:var(--sub);line-height:1}
+.tabs{display:flex;gap:2px;padding:14px 24px 0;border-bottom:1px solid var(--line)}
+.tabs button{background:none;border:none;padding:8px 12px;font-size:11px;letter-spacing:.03em;color:var(--sub);border-bottom:2px solid transparent}
+.tabs button.on{color:var(--ink);border-color:var(--accent);font-weight:600}
+.kv{padding:18px 24px}
+.kv .r{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);font-size:12px}
+.kv .r span:first-child{color:var(--sub)}
+.kv .r span:last-child{font-family:var(--mono)}
+
+@media (max-width:960px){
+  .login{grid-template-columns:1fr}.login-left{display:none}
+  .kpis{grid-template-columns:1fr 1fr}.kpi{border-left:none;border-top:1px solid var(--line)}
+  .layout{grid-template-columns:1fr}.main{border-right:none}
+  .scoreband{grid-template-columns:1fr}.scorebox{border-right:none;border-bottom:1px solid var(--line)}
+  .grid2{grid-template-columns:1fr}
+  .pheader{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const TRAJ={gradual:'GRADUAL RECOVERY',stable:'STABLE',fluctuating:'FLUCTUATING',declining:'DECLINING',rapid:'RAPID RECOVERY'};
+const BASE_SEEDS=[
+ {id:'P-1024',name:'김○○',age:42,sex:'M',dx:'MDD',start:42,end:72,pattern:'gradual',tx:'Medication',quality:96},
+ {id:'P-1028',name:'이○○',age:36,sex:'F',dx:'Bipolar Disorder',start:61,end:65,pattern:'stable',tx:'Medication + Behavioral',quality:91},
+ {id:'P-1031',name:'박○○',age:29,sex:'M',dx:'Schizophrenia',start:58,end:51,pattern:'fluctuating',tx:'Medication',quality:87},
+ {id:'P-1035',name:'최○○',age:51,sex:'F',dx:'MDD',start:58,end:39,pattern:'declining',tx:'Treatment Adjustment',quality:79},
+ {id:'P-1040',name:'정○○',age:47,sex:'M',dx:'Bipolar Disorder',start:45,end:57,pattern:'gradual',tx:'Medication',quality:90},
+ {id:'P-1044',name:'한○○',age:33,sex:'F',dx:'Schizophrenia',start:50,end:78,pattern:'rapid',tx:'Medication + Behavioral',quality:94},
+];
+function rnd(s){let x=Math.sin(s)*10000;return x-Math.floor(x);}
+function genSeries(start,end,pattern,seed){
+  const arr=[];
+  for(let d=0;d<14;d++){
+    const t=d/13;let base;
+    if(pattern==='fluctuating')base=start+Math.sin(d*1.3+seed)*6+(end-start)*t*0.3;
+    else if(pattern==='declining')base=start+(end-start)*Math.pow(t,0.85);
+    else if(pattern==='rapid')base=start+(end-start)*Math.pow(t,0.6);
+    else if(pattern==='stable')base=start+(end-start)*t+Math.sin(d*0.9+seed)*1.4;
+    else base=start+(end-start)*t;
+    const noise=(rnd(seed*7+d)-0.5)*2.2;
+    arr.push(Math.round(Math.max(0,Math.min(100,base+noise))));
+  }
+  arr[0]=start;arr[13]=end;return arr;
+}
+function genExtraSeeds(n){
+  const surnames=['김','이','박','최','정','강','조','윤','장','임','한','오','서','신','권','황','안','송','전','홍','유','고','문','양'];
+  const dxList=['MDD','Bipolar Disorder','Schizophrenia'];
+  const patterns=['gradual','stable','fluctuating','declining','rapid'];
+  const out=[];
+  for(let i=0;i<n;i++){
+    const sd=i+101;
+    const dx=dxList[Math.floor(rnd(sd*3)*dxList.length)];
+    const pattern=patterns[Math.floor(rnd(sd*5)*patterns.length)];
+    const age=18+Math.floor(rnd(sd*7)*50);
+    const sex=rnd(sd*9)<0.5?'M':'F';
+    const quality=76+Math.floor(rnd(sd*11)*22);
+    const base=38+Math.floor(rnd(sd*13)*30);
+    let start,end;
+    if(pattern==='declining'){start=base+Math.floor(rnd(sd*15)*15);end=start-(10+Math.floor(rnd(sd*17)*22));}
+    else if(pattern==='rapid'){start=base-Math.floor(rnd(sd*15)*10);end=start+(18+Math.floor(rnd(sd*17)*22));}
+    else if(pattern==='gradual'){start=base;end=start+(6+Math.floor(rnd(sd*17)*18));}
+    else if(pattern==='fluctuating'){start=base;end=start+Math.round((rnd(sd*19)-0.5)*14);}
+    else{start=base;end=start+Math.round((rnd(sd*19)-0.5)*6);}
+    start=Math.max(15,Math.min(92,start));end=Math.max(10,Math.min(97,end));
+    const tx=pattern==='declining'?'Treatment Adjustment':(rnd(sd*23)<0.4?'Medication + Behavioral':'Medication');
+    out.push({id:'P-'+(1048+i*4),name:surnames[i%surnames.length]+'○○',age,sex,dx,start,end,pattern,tx,quality});
+  }
+  return out;
+}
+const SEEDS=[...BASE_SEEDS,...genExtraSeeds(36)];
+// SIMULATED SMART-PFN INFERENCE — deterministic seeded placeholder.
+// TODO: replace with real call to estimate_recovery_score(patient_id, day)
+// from a trained Prior-data Fitted Network once available.
+const SCALE={MDD:'MADRS',Bipolar:'YMRS','Bipolar Disorder':'YMRS',Schizophrenia:'PANSS'};
+const MED={MDD:'SSRI (Sertraline 100mg)',Bipolar:'Mood stabilizer (Lithium)','Bipolar Disorder':'Mood stabilizer (Lithium)',Schizophrenia:'Antipsychotic (Risperidone)'};
+const FACTOR_TPL=[
+ {label:'Sleep regularity',mod:'Wearable'},{label:'Activity level',mod:'Wearable'},
+ {label:'Facial expression diversity',mod:'Behavior'},{label:'Medication adherence',mod:'Clinical'},
+ {label:'Depressive language',mod:'Conversation'},
+];
+function buildPatient(s,i){
+  const series=genSeries(s.start,s.end,s.pattern,i+1);
+  const score=series[13],delta14=score-s.start,velocity=(delta14/13).toFixed(1);
+  const dir=delta14>=0?1:-1;
+  const factors=FACTOR_TPL.map((f,k)=>{
+    let v;
+    if(f.label==='Depressive language')v=Math.round(-Math.abs(dir)*(1.5+(dir<0?3.2:1)+rnd(i*3+k)));
+    else v=Math.round(dir*(1.6+k*1.15+rnd(i*5+k)*1.5));
+    return {...f,val:v};
+  });
+  const q=s.quality;
+  const modalities={
+    Clinical:{status:'AVAILABLE',quality:Math.min(99,q+2),signal:dir>0?'Improving':dir<0?'Declining':'Stable'},
+    Wearable:{status:'AVAILABLE',quality:Math.max(60,q-1),signal:dir>0?'Improving':dir<0?'Declining':'Stable'},
+    Conversation:{status:q<88?'PARTIAL':'AVAILABLE',quality:Math.max(55,q-14),signal:'Stable'},
+    Behavior:{status:'AVAILABLE',quality:Math.max(60,q-5),signal:dir>0?'Improving':dir<0?'Declining':'Stable'},
+  };
+  const missing=Array.from({length:14},(_,d)=>Math.round((100-q)/22+d*0.14+rnd(i*9+d)));
+  const timeline=[
+   {day:1,label:'Admission'},{day:3,label:'Medication initiated'},
+   {day:6,label:'Behavioral treatment started'},
+   {day:9,label:s.tx==='Treatment Adjustment'?'Treatment adjustment initiated':'Medication maintained'},
+   {day:12,label:'Clinical reassessment'},{day:14,label:'Current — Day 14'},
+  ];
+  const scaleName=SCALE[s.dx]||'CGI-S';
+  const scaleVal=Math.max(2,Math.round(40-score*0.34));
+  const detail={
+    clinical:{Age:s.age,Sex:s.sex,Diagnosis:s.dx,Hospitalization:'Day 14',Medication:MED[s.dx]||'—',
+      'Medication adherence':Math.min(99,q+1)+'%','Clinical scale':scaleName+' '+scaleVal,
+      'Baseline severity':s.start<50?'Severe':s.start<65?'Moderate–severe':'Moderate'},
+    wearable:{'Sleep (h)':(5+score/100*3).toFixed(1),'Sleep efficiency':Math.round(68+score*0.28)+'%',
+      WASO:Math.round(60-score*0.28)+' min',Steps:Math.round(3000+score*70).toLocaleString()+' steps',
+      'Heart rate':Math.round(84-score*0.18)+' bpm',HRV:Math.round(20+score*0.3)+' ms',
+      SpO2:Math.round(94+score*0.03)+'%','Skin temp':(33+score*0.01).toFixed(1)+'°C'},
+    conversation:{'Speech amount':Math.round(200+score*3)+' words/session','Speech rate':(2+score*0.02).toFixed(1)+' wps',
+      'Response latency':(2.5-score*0.012).toFixed(1)+'s','Silence ratio':Math.round(36-score*0.2)+'%',
+      'Semantic coherence':(0.5+score*0.005).toFixed(2),'Depressive language':score>60?'Low':score>45?'Moderate':'Elevated',
+      'Suicidal ideation language':'None detected'},
+    behavior:{'Facial expr. diversity':(0.4+score*0.005).toFixed(2),'AU variance':(0.3+score*0.005).toFixed(2),
+      'Expression entropy':(1.2+score*0.012).toFixed(1),'Eye contact':Math.round(40+score*0.4)+'%',
+      Gaze:score>55?'Stable':'Variable','Psychomotor activity':score>55?'Normal':'Reduced'},
+  };
+  return {...s,score,delta14,velocity,stability:(0.6+rnd(i*11)*0.3).toFixed(2),confidence:(0.75+rnd(i*13)*0.18).toFixed(2),
+    series,factors,modalities,missing,timeline,detail,
+    review: delta14<=-15?'URGENT REVIEW':delta14<0?'REVIEW':null,
+    trajLabel:TRAJ[s.pattern]};
+}
+const PATIENTS=SEEDS.map(buildPatient);
+const byId=id=>PATIENTS.find(p=>p.id===id);
+
+let state={view:'login',pid:null,drawer:false,tab:'clinical'};
+function go(v,pid){state.view=v;if(pid)state.pid=pid;state.drawer=false;render();window.scrollTo(0,0);}
+function fmtΔ(v){return (v>0?'+':'')+v;}
+function trendClass(v){return v>0?'up':v<0?'down':'';}
+
+function sparkline(series,w,h){
+  const pad=6,stepX=(w-2*pad)/(series.length-1);
+  const pt=(v,i)=>[pad+i*stepX,pad+(h-2*pad)*(1-v/100)];
+  const d=series.map((v,i)=>{const[x,y]=pt(v,i);return (i===0?'M':'L')+x.toFixed(1)+','+y.toFixed(1);}).join(' ');
+  const last=pt(series[series.length-1],series.length-1);
+  let grid='';
+  [0,25,50,75,100].forEach(g=>{const y=pad+(h-2*pad)*(1-g/100);grid+=`<line x1="${pad}" y1="${y}" x2="${w-pad}" y2="${y}" stroke="var(--line)" stroke-width="1"/><text x="2" y="${y+3}" font-size="9" fill="var(--sub)" font-family="var(--mono)">${g}</text>`;});
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}">${grid}
+   <path d="${d}" fill="none" stroke="var(--accent)" stroke-width="2"/>
+   <circle cx="${last[0]}" cy="${last[1]}" r="3.5" fill="var(--accent)"/></svg>`;
+}
+
+function renderLogin(){
+  return `<div class="login">
+    <div class="login-left">
+      <h1>SMART-PFN</h1>
+      <div class="lede">Scalable Multimodal Analysis of Recovery Trajectories using Prior-data Fitted Networks.</div>
+      <div class="foot">SIMULATION ENVIRONMENT — CLINICAL RESEARCH PROTOTYPE</div>
+    </div>
+    <div class="login-right">
+      <form class="login-form" onsubmit="return doLogin(event)">
+        <h2>LOGIN</h2>
+        <div class="field"><label>ID</label><input id="li-id" autocomplete="username"></div>
+        <div class="field"><label>PASSWORD</label><input id="li-pw" type="password" autocomplete="current-password"></div>
+        <button class="btn" type="submit">SIGN IN</button>
+        <div id="li-err" class="err"></div>
+        <div class="hint">Demo credentials — ID: doctor · Password: smartpfn2026<br>All patient data on this system is simulated for demonstration only.</div>
+      </form>
+    </div>
+  </div>`;
+}
+function doLogin(e){
+  e.preventDefault();
+  const id=document.getElementById('li-id').value.trim();
+  const pw=document.getElementById('li-pw').value;
+  if(id==='doctor'&&pw==='smartpfn2026'){
+    try{localStorage.setItem('spfn_auth','1')}catch(e){}
+    go('dashboard');
+  }else{document.getElementById('li-err').textContent='Invalid ID or password.';}
+  return false;
+}
+function logout(){try{localStorage.removeItem('spfn_auth')}catch(e){}go('login');}
+
+function topbar(activeLabel){
+  return `<div class="topbar">
+    <div class="brand"><b>SMART-PFN</b><span>Clinical Research Environment</span></div>
+    <div class="topmeta">
+      <span class="badge">SIMULATION</span>
+      <span>DATA UPDATED&nbsp;<b class="mono" style="color:var(--ink)">09:42</b></span>
+      <button class="logout" onclick="logout()">SIGN OUT</button>
+    </div>
+  </div>`;
+}
+
+function renderDashboard(){
+  const total=PATIENTS.length;
+  const reviewCount=PATIENTS.filter(p=>p.review).length;
+  const avgScore=(PATIENTS.reduce((a,p)=>a+p.score,0)/total).toFixed(1);
+  const avgQ=(PATIENTS.reduce((a,p)=>a+p.modalities.Clinical.quality*0+p.quality,0)/total).toFixed(1);
+  const dist={};Object.values(TRAJ).forEach(t=>dist[t]=0);
+  PATIENTS.forEach(p=>dist[p.trajLabel]++);
+  const maxDist=Math.max(...Object.values(dist));
+  const rows=PATIENTS.map(p=>`
+    <tr class="row" onclick="go('patient','${p.id}')">
+      <td class="pid">${p.id}<div class="sub" style="font-size:11px;font-weight:400">${p.name}</div></td>
+      <td>${p.dx}</td>
+      <td class="num">${p.score}</td>
+      <td>${p.trajLabel}</td>
+      <td class="num ${trendClass(p.delta14)}">${fmtΔ(p.delta14)}</td>
+      <td class="num">${p.quality}%</td>
+      <td>${p.tx}</td>
+      <td>${p.review==='URGENT REVIEW'?'<span class="tag-urgent">URGENT</span>':p.review==='REVIEW'?'<span class="tag-review">REVIEW</span>':'—'}</td>
+    </tr>`).join('');
+  const distRows=Object.entries(dist).map(([k,v])=>`
+    <div class="dist-row"><div class="name">${k}</div><div class="bar"><i style="width:${maxDist?v/maxDist*100:0}%"></i></div><div class="n">${v}</div></div>`).join('');
+  const reviewList=PATIENTS.filter(p=>p.review).map(p=>`
+    <div class="review-item">
+      <div class="top"><span class="pid">${p.id}</span><span class="${p.review==='URGENT REVIEW'?'down':'warn'}" style="font-size:11px;font-weight:600">${p.review}</span></div>
+      <div class="why">${p.dx} · ${p.trajLabel.toLowerCase()} · 14D Δ ${fmtΔ(p.delta14)} · quality ${p.quality}%</div>
+      <button onclick="go('patient','${p.id}')">OPEN CASE</button>
+    </div>`).join('')||'<div class="sub" style="font-size:12px">No cases currently flagged.</div>';
+  return `${topbar()}
+  <div class="wrap" style="padding:6px 28px 0"><div style="font-size:18px;font-weight:600;padding:16px 0 2px">Clinical Command Center</div></div>
+  <div class="kpis">
+    <div class="kpi"><div class="lbl">TOTAL PATIENTS</div><div class="val big">${total}</div></div>
+    <div class="kpi"><div class="lbl">REQUIRING REVIEW</div><div class="val big ${reviewCount?'down':''}">${reviewCount}</div></div>
+    <div class="kpi"><div class="lbl">AVG RECOVERY SCORE</div><div class="val big">${avgScore}</div></div>
+    <div class="kpi"><div class="lbl">DATA QUALITY</div><div class="val big">${avgQ}<small>%</small></div></div>
+  </div>
+  <div class="layout">
+    <div class="main">
+      <div class="section">
+        <h3>PATIENT MONITORING <span class="sub" style="font-weight:400">(${total})</span></h3>
+        <div class="table-scroll"><table><thead><tr><th>PATIENT</th><th>DIAGNOSIS</th><th style="text-align:right">SCORE</th><th>TRAJECTORY</th><th style="text-align:right">14D Δ</th><th style="text-align:right">QUALITY</th><th>TREATMENT</th><th>REVIEW</th></tr></thead>
+        <tbody>${rows}</tbody></table></div>
+      </div>
+    </div>
+    <div class="rail">
+      <h3 class="lbl" style="margin-bottom:14px">RECOVERY DISTRIBUTION</h3>
+      ${distRows}
+      <div style="height:22px"></div>
+      <h3 class="lbl" style="margin-bottom:14px">PRIORITY REVIEW</h3>
+      <div class="rail-scroll">${reviewList}</div>
+    </div>
+  </div>`;
+}
+
+function renderPatient(id){
+  const p=byId(id);
+  const factors=p.factors.map(f=>`
+    <div class="factor">
+      <div class="fh"><span>${f.label}<span class="fmod">${f.mod.toUpperCase()}</span></span><span class="${trendClass(f.val)} mono">${fmtΔ(f.val)}</span></div>
+      <div class="track"><div class="fill" style="width:${Math.min(100,Math.abs(f.val)*9)}%;background:${f.val>=0?'var(--up)':'var(--down)'}"></div></div>
+    </div>`).join('');
+  const modrows=Object.entries(p.modalities).map(([k,m])=>`
+    <div class="modrow"><div class="name">${k}</div><div class="sub">${m.status}</div><div class="mono">${m.quality}%</div><div class="${m.signal==='Improving'?'up':m.signal==='Declining'?'down':'sub'}">${m.signal}</div></div>`).join('');
+  const qrows=[['Clinical',p.modalities.Clinical.quality],['Wearable',p.modalities.Wearable.quality],['Conversation',p.modalities.Conversation.quality],['Behavior',p.modalities.Behavior.quality]]
+    .map(([k,v])=>`<div class="qrow"><div class="name">${k}</div><div class="track"><div class="fill" style="width:${v}%"></div></div><div class="v mono">${v}%</div></div>`).join('');
+  const tl=p.timeline.map(e=>`<div class="ev"><div class="d">DAY ${e.day}</div><div class="l">${e.label}</div></div>`).join('');
+  return `${topbar()}
+  <button class="back" onclick="go('dashboard')">← Command Center</button>
+  <div class="pheader">
+    <div class="who"><span class="pid">${p.id}</span><span class="name">${p.name}</span></div>
+    <div class="metabar">
+      <div><div class="lbl">DIAGNOSIS</div><div class="v">${p.dx}</div></div>
+      <div><div class="lbl">STATUS</div><div class="v">Inpatient · Day 14</div></div>
+      <div><div class="lbl">TREATMENT</div><div class="v">${p.tx}</div></div>
+      <div><div class="lbl">LAST UPDATED</div><div class="v mono">09:42</div></div>
+    </div>
+    <button class="drawerbtn" onclick="openDrawer('${p.id}')">데이터 상세보기</button>
+  </div>
+  <div class="scoreband">
+    <div class="scorebox">
+      <div class="lbl">RECOVERY SCORE</div>
+      <div class="score">${p.score}<small>/100</small></div>
+      <div class="traj">${p.trajLabel}</div>
+      <div class="metrics">
+        <div><span class="sub">14-DAY CHANGE</span><span class="v ${trendClass(p.delta14)}">${fmtΔ(p.delta14)}</span></div>
+        <div><span class="sub">RECOVERY VELOCITY</span><span class="v">${p.velocity>=0?'+':''}${p.velocity} / day</span></div>
+        <div><span class="sub">STABILITY</span><span class="v">${p.stability}</span></div>
+        <div><span class="sub">CONFIDENCE</span><span class="v">${p.confidence}</span></div>
+      </div>
+    </div>
+    <div class="chartbox">
+      <div class="chartmeta"><span class="lbl">RECOVERY SCORE — DAY 1–14</span><span class="sub mono">SIMULATED DATA</span></div>
+      ${sparkline(p.series,760,220)}
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="section">
+      <h3>CONTRIBUTING FACTORS</h3>${factors}
+    </div>
+    <div class="section">
+      <h3>MODALITY OVERVIEW</h3>
+      <div class="modrow" style="border-bottom:1px solid var(--line);font-size:10px;color:var(--sub);letter-spacing:.05em"><div>MODALITY</div><div>STATUS</div><div>QUALITY</div><div>SIGNAL</div></div>
+      ${modrows}
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="section">
+      <h3>DATA QUALITY</h3>${qrows}
+    </div>
+    <div class="section">
+      <h3>TREATMENT TIMELINE</h3>
+      <div class="tl">${tl}</div>
+    </div>
+  </div>
+  ${state.drawer?renderDrawer(p):''}`;
+}
+
+function openDrawer(id){state.drawer=true;state.tab='clinical';render();}
+function closeDrawer(){state.drawer=false;render();}
+function setTab(t){state.tab=t;render();}
+function renderDrawer(p){
+  const tabs=[['clinical','Clinical'],['wearable','Wearable'],['conversation','Conversation'],['behavior','Behavior']];
+  const activeTabs=state.tab==='all'?tabs.map(t=>t[0]):[state.tab];
+  const body=activeTabs.map(k=>Object.entries(p.detail[k]).map(([kk,v])=>`<div class="r"><span>${kk}</span><span>${v}</span></div>`).join('')).join('');
+  return `<div class="overlay" onclick="if(event.target===this)closeDrawer()">
+    <div class="drawer">
+      <div class="dh"><h3>${p.id} — 데이터 상세보기</h3><button onclick="closeDrawer()">×</button></div>
+      <div class="tabs">
+        <button class="${state.tab==='all'?'on':''}" onclick="setTab('all')">전체</button>
+        ${tabs.map(([k,l])=>`<button class="${state.tab===k?'on':''}" onclick="setTab('${k}')">${l}</button>`).join('')}
+      </div>
+      <div class="kv">${body}</div>
+    </div>
+  </div>`;
+}
+
+function render(){
+  const app=document.getElementById('app');
+  if(state.view==='login')app.innerHTML=renderLogin();
+  else if(state.view==='dashboard')app.innerHTML=renderDashboard();
+  else if(state.view==='patient')app.innerHTML=renderPatient(state.pid);
+}
+(function init(){
+  let authed=false;
+  try{authed=localStorage.getItem('spfn_auth')==='1'}catch(e){}
+  state.view=authed?'dashboard':'login';
+  render();
+})();
+</script>
+</body>
+</html>
